@@ -1,0 +1,13 @@
+externals:
+  Libs/LibStub: https://repos.curseforge.com/wow/libstub/trunk
+  Libs/CallbackHandler-1.0: https://repos.curseforge.com/wow/callbackhandler/trunk/CallbackHandler-1.0
+  Libs/LibUIDropDownMenu: https://repos.curseforge.com/wow/libuidropdownmenu/trunk
+  Libs/Krowi_WorldMapButtons: https://github.com/TheKrowi/Krowi_WorldMapButtons.git
+
+ignore:
+  - Assets
+  - "*.md"
+
+manual-changelog:
+  filename: RECENT_CHANGES.md
+  markup-type: markdown

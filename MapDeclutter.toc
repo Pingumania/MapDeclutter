@@ -1,0 +1,15 @@
+## Interface: 100107
+
+## Title: Map Declutter
+## Notes: Hide icons on the map so you can actually see the map
+## Author: Pingumania
+
+## SavedVariables: MapDeclutterDB
+## OptionalDeps: Krowi_WorldMapButtons, !LibUIDropDownMenu
+
+#@non-debug@
+# Embeds.xml
+#@end-non-debug@
+template.xml
+locale.lua
+core.lua

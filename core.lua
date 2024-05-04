@@ -1,17 +1,39 @@
 local ADDON_NAME, ns = ...
 local L = ns.L
 local LibDD = LibStub("LibUIDropDownMenu-4.0")
-local HN = LibStub("AceAddon-3.0"):GetAddon("HandyNotes")
-local cfg
+local cfg, HandyNotes
 
 local dataProviders = {
-	["AreaPOIPins"] = { template = "AreaPOIPinTemplate", name = L["Area Points of Interest"] },
-	["WorldMap_WorldQuestPins"] = { template = "WorldMap_WorldQuestPinTemplate", name = L["World Quests"] },
-	["MapLinkPins"] = { template = "MapLinkPinTemplate", name = L["Map Links"] },
-	["FlightPointPins"] = { template = "FlightPointPinTemplate", name = L["Flight Points"] },
-	["PetTamerPins"] = { template = "PetTamerPinTemplate", name = L["Pet Tamer"] },
-	["EncounterJournalPins"] = { template = "EncounterJournalPinTemplate", name = L["Boss Icons"] },
-	["VignettePins"] = { template = "VignettePinTemplate", name = L["Vignettes"] }
+	["AreaPOI"] 				= { template = "AreaPOIPinTemplate", name = L["Points of Interest"] },
+	["BattlefieldFlag"] 		= { template = "BattlefieldFlagPinTemplate", name = L["Battlefield Flag"] },
+	["BonusObjective"] 			= { templates = { "ThreatObjectivePinTemplate", "BonusObjectivePinTemplate" }, name = L["Bonus Objectives"] },
+	["ContentTracking"] 		= { template = "ContentTrackingPinTemplate", name = L["Content Tracking"] },
+	["ContributionCollector"] 	= { template = "ContributionCollectorPinTemplate", name = L["Contribution Collector"] },
+	["DeathMap"] 				= { templates = { "CorpsePinTemplate", "DeathReleasePinTemplate" }, name = L["Death"] },
+	["DigSite"] 				= { template = "DigSitePinTemplate", name = L["Dig Sites"] },
+	["DungeonEntrance"] 		= { template = "DungeonEntrancePinTemplate", name = L["Dungenon Entrances"] },
+	["EncounterJournal"] 		= { template = "EncounterJournalPinTemplate", name = L["Encounter"] },
+	["FlightPoint"] 			= { template = "FlightPointPinTemplate", name = L["Flight Points"] },
+	["FogOfWar"] 				= { template = "FogOfWarPinTemplate", name = L["Fog of War"] },
+	["GarrisonPlot"] 			= { template = "GarrisonPlotPinTemplate", name = L["Garrison Plot"] },
+	["Gossip"] 					= { template = "GossipPinTemplate", name = L["Gossip"] },
+	["GroupMembers"] 			= { template = "GroupMembersPinTemplate", name = L["Group Members"] },
+	["Invasion"] 				= { template = "InvasionPinTemplate", name = L["Invasion"] },
+	["MapExploration"] 			= { template = "MapExplorationPinTemplate", name = L["Map Exploration"] },
+	["MapHighlight"] 			= { template = "MapHighlightPinTemplate", name = L["Map Highlights"] },
+	["MapIndicatorQuest"] 		= { template = "MapIndicatorQuestPinTemplate", name = L["Map Indicators"] },
+	["MapLink"] 				= { template = "MapLinkPinTemplate", name = L["Map Links"] },
+	["PetTamer"] 				= { template = "PetTamerPinTemplate", name = L["Pet Tamer"] },
+	["Quest"] 					= { template = "QuestPinTemplate", name = L["Quests"] },
+	["QuestBlob"] 				= { template = "QuestBlobPinTemplate", name = L["Quest Blobs"] },
+	["Scenario"] 				= { templates = { "ScenarioPinTemplate", "ScenarioBlobPinTemplate" }, name = L["Scenarios"] },
+	["SelectableGraveyard"] 	= { template = "SelectableGraveyardPinTemplate", name = L["Graveyards"] },
+	["StorylineQuest"] 			= { template = "StorylineQuestPinTemplate", name = L["Storyline"] },
+	["Vehicle"] 				= { template = "VehiclePinTemplate", name = L["Vehicles"] },
+	["Vignette"] 				= { template = "VignettePinTemplate", name = L["Vignettes"]},
+	["WaypointLocation"] 		= { template = "WaypointLocationPinTemplate", name = L["Waypoints"] },
+	["WorldMap_EventOverlay"] 	= { templates = { "WorldMapInvasionOverlayPinTemplate", "WorldMapThreatOverlayPinTemplate" }, name = L["World Events"] },
+	["WorldMap_WorldQuest"] 	= { template = "WorldMap_WorldQuestPinTemplate", name = L["World Quests"] },
 }
 
 local addonProviders = {
@@ -30,39 +52,112 @@ local function IsAtLeastOneAddonLoaded()
 	return false
 end
 
-local function hookPin(pin)
-	if pin.hooked then return end
+local function GetDataProviderFromTemplate(template)
+	for value, data in pairs(dataProviders) do
+		if data.template == template then
+			return value
+		end
+	end
+end
+
+local hookedPins = {}
+local function hookPin(pin, dataProvider)
+	if hookedPins[pin] then return end
 
 	pin:HookScript("OnShow", function(self)
-		if self.state then
+		if cfg[dataProvider] then
 			self:Show()
 		else
 			self:Hide()
 		end
 	end)
 
-	pin.hooked = true
+	hookedPins[pin] = true
 end
 
-local function togglePinTemplate(template, state)
+local function hookPins(template)
 	for pin in WorldMapFrame:EnumeratePinsByTemplate(template) do
-		pin.state = state
-		hookPin(pin)
-		pin:SetShown(state)
+		hookPin(pin, GetDataProviderFromTemplate(template))
 	end
 end
 
-local function toggleAllPinTemplates()
+local function hookAllPins()
 	for value, data in pairs(dataProviders) do
-		togglePinTemplate(data.template, cfg[value])
+		if data.template then
+			hookPins(data.template)
+		elseif data.templates then
+			for template in pairs(data.templates) do
+				hookPins(template)
+			end
+		end
+	end
+end
+
+local function hookVignettePin(template, vignetteInfo)
+	for pin in WorldMapFrame:EnumeratePinsByTemplate(template) do
+		if pin:GetVignetteID() == vignetteInfo.vignetteID then
+			hookPin(pin, GetDataProviderFromTemplate(template))
+		end
+	end
+end
+
+local function toggleAllTemplatePins(template)
+	if InCombatLockdown() then return end
+	for pin in WorldMapFrame:EnumeratePinsByTemplate(template) do
+		if cfg[GetDataProviderFromTemplate(template)] then
+			pin:Show()
+		else
+			pin:Hide()
+		end
+	end
+end
+
+local function toggleAllPins()
+	for value, data in pairs(dataProviders) do
+		if data.template then
+			toggleAllTemplatePins(data.template)
+		elseif data.templates then
+			for template in pairs(data.templates) do
+				toggleAllTemplatePins(template)
+			end
+		end
 	end
 end
 
 local function toggleHandyNotes(state)
 	if state then
-		HN:Enable()
+		HandyNotes:Enable()
 	else
-		HN:Disable()
+		HandyNotes:Disable()
+	end
+end
+
+local function PreHook()
+	for dp in pairs(WorldMapFrame.dataProviders) do
+		if dp.GetPinTemplate then
+			local template = dp:GetPinTemplate()
+			if template == "VignettePinTemplate" then
+				hooksecurefunc(dp, "GetPin", function(self, vignetteGUID, vignetteInfo)
+					hookVignettePin(template, vignetteInfo)
+					toggleAllTemplatePins(template)
+				end)
+			elseif template == "WorldMap_WorldQuestPinTemplate" then
+				hooksecurefunc(dp, "RefreshAllData", function()
+					hookPins(template)
+					toggleAllTemplatePins(template)
+				end)
+			elseif template == "AreaPOIPinTemplate" then
+				hooksecurefunc(dp, "RefreshAllData", function()
+					hookPins(template)
+					toggleAllTemplatePins(template)
+				end)
+			end
+		elseif dp.RefreshAllData then
+			hooksecurefunc(dp, "RefreshAllData", function()
+				hookAllPins()
+				toggleAllPins()
+			end)
+		end
 	end
 end
 
@@ -174,15 +269,17 @@ function MapDeclutter_WorldMapButtonMixin:OnSelection(value, checked, data)
 	cfg[value] = checked
 
 	if data.template then
-		togglePinTemplate(data.template, checked)
+		toggleAllTemplatePins(data.template)
+	elseif data.templates then
+		for template in pairs(data.templates) do
+			toggleAllTemplatePins(template)
+		end
 	elseif value == "HandyNotes" then
 		toggleHandyNotes(checked)
 	end
 end
 
 function MapDeclutter_WorldMapButtonMixin:Refresh()
-	toggleAllPinTemplates()
-	toggleHandyNotes(cfg["HandyNotes"])
 end
 
 local function cleanSavedVariables(table1, table2)
@@ -192,6 +289,10 @@ local function cleanSavedVariables(table1, table2)
 		end
 	end
 end
+
+EventUtil.ContinueOnAddOnLoaded("HandyNotes", function()
+	HandyNotes = LibStub("AceAddon-3.0"):GetAddon("HandyNotes")
+end)
 
 EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
 	local WorldMapButtons = LibStub("Krowi_WorldMapButtons-1.4"):Add("MapDeclutter_WorldMapButton_Template", "DROPDOWNTOGGLEBUTTON")
@@ -213,4 +314,6 @@ EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
 
 	cfg = setmetatable(MapDeclutterDB, { __index = defaults })
 	ns.cfg = cfg
+
+	PreHook()
 end)

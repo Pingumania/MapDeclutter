@@ -1,7 +1,8 @@
-## Interface: 100207
+## Interface: 110100
 
 ## Title: Map Declutter
 ## Notes: Hide icons on the map so you can actually see the map
+## Category: Map
 ## Author: Pingumania
 
 ## SavedVariables: MapDeclutterDB

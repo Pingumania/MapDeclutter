@@ -44,7 +44,7 @@ local addonProviders = {
 local function IsAtLeastOneAddonLoaded()
 	local loaded
 	for addon in pairs(addonProviders) do
-		loaded = IsAddOnLoaded(addon)
+		loaded = C_AddOns.IsAddOnLoaded(addon)
 		if loaded then
 			return true
 		end
@@ -243,7 +243,7 @@ function MapDeclutter_WorldMapButtonMixin:InitializeDropDown(frame, level)
 			LibDD:UIDropDownMenu_AddButton(info)
 		
 			for addon, data in pairs(addonProviders) do
-				if IsAddOnLoaded(addon) then
+				if C_AddOns.IsAddOnLoaded(addon) then
 					info.isTitle = nil
 					info.disabled = nil
 					info.notCheckable = nil
